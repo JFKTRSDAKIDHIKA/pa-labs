@@ -40,19 +40,63 @@ static uint32_t *vgactl_port_base = NULL;
 
 static SDL_Renderer *renderer = NULL;
 static SDL_Texture *texture = NULL;
+static SDL_Window *window = NULL;
 
 static void init_screen() {
-  SDL_Window *window = NULL;
   char title[128];
   sprintf(title, "%s-NEMU", str(__GUEST_ISA__));
-  SDL_Init(SDL_INIT_VIDEO);  
-  SDL_CreateWindowAndRenderer(
-      SCREEN_W * (MUXDEF(CONFIG_VGA_SIZE_400x300, 2, 1)),
-      SCREEN_H * (MUXDEF(CONFIG_VGA_SIZE_400x300, 2, 1)),
-      0, &window, &renderer);
-  SDL_SetWindowTitle(window, title);
+  
+  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    printf("SDL Init Error: %s\n", SDL_GetError());
+    exit(1);
+  }
+
+  // Try with software rendering flags
+  uint32_t windowFlags = SDL_WINDOW_SHOWN;
+  window = SDL_CreateWindow(title,
+      SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+      SCREEN_W, SCREEN_H,
+      windowFlags);
+      
+  if (!window) {
+    printf("Window Creation Error: %s\n", SDL_GetError());
+    SDL_Quit();
+    exit(1);
+  }
+
+  // Try software renderer first
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+  if (!renderer) {
+    printf("Software Renderer Creation Error: %s\n", SDL_GetError());
+    // Fallback to default renderer
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    if (!renderer) {
+      printf("Fallback Renderer Creation Error: %s\n", SDL_GetError());
+      SDL_DestroyWindow(window);
+      SDL_Quit();
+      exit(1);
+    }
+  }
+
+  // Print renderer information
+  SDL_RendererInfo info;
+  if (SDL_GetRendererInfo(renderer, &info) == 0) {
+    printf("Using renderer: %s\n", info.name);
+  }
+
   texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
-      SDL_TEXTUREACCESS_STATIC, SCREEN_W, SCREEN_H);
+      SDL_TEXTUREACCESS_STREAMING, SCREEN_W, SCREEN_H);
+  if (!texture) {
+    printf("Texture Creation Error: %s\n", SDL_GetError());
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    exit(1);
+  }
+
+  // Clear the window to black
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
   SDL_RenderPresent(renderer);
 }
 
