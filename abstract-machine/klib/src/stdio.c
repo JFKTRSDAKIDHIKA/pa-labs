@@ -13,11 +13,10 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
   while (*p) {
       if (*p == '%') {
           p++;
-          // 解析宽度和填充
           int width = 0;
           int pad_zero = 0;
           if (*p == '0') {
-              pad_zero = 1; // 左侧补 0
+              pad_zero = 1; 
               p++;
           }
           while (*p >= '0' && *p <= '9') {
@@ -68,7 +67,7 @@ int vsprintf(char *out, const char *fmt, va_list ap) {
               }
               default: {
                   *str++ = '%';
-                  if (*p) *str++ = *p; // 避免越界
+                  if (*p) *str++ = *p; 
                   break;
               }
           }
@@ -101,23 +100,21 @@ int printf(const char *fmt, ...) {
   return ret;
 }
 
-// Function vsnprintf only supports "%d" and "%s".
 int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
-  int pos = 0;   // 记录实际写入到 out 的字符数量
-  int total = 0; // 记录应写入的字符总数（不受 n 限制）
+  int pos = 0;   
+  int total = 0;
   const char *p = fmt;
   
   while (*p) {
     if (*p == '%') {
-      p++;  // 跳过 '%'
+      p++;  
       switch (*p) {
-        case 'd': {  // 处理整型格式 %d
+        case 'd': {  
           int val = va_arg(ap, int);
           char buf[32];
           int_to_str(val, buf);
           char *b = buf;
           while (*b) {
-            // 每个字符写入前都要判断是否还有空间写入（保留一个字节给 '\0'）
             if (n > 0 && pos < (int)(n - 1)) {
               out[pos] = *b;
               pos++;
@@ -127,7 +124,7 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
           }
           break;
         }
-        case 's': {  // 处理字符串格式 %s
+        case 's': {  
           char *s = va_arg(ap, char *);
           if (s == NULL) s = "(null)";
           while (*s) {
@@ -140,13 +137,12 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
           }
           break;
         }
-        default: {   // 遇到未知的格式符，直接输出 '%' 和后面的字符
+        default: {   
           if (n > 0 && pos < (int)(n - 1)) {
             out[pos] = '%';
             pos++;
           }
           total++;
-          // 输出未知格式符本身
           if (*p) {
             if (n > 0 && pos < (int)(n - 1)) {
               out[pos] = *p;
@@ -158,16 +154,14 @@ int vsnprintf(char *out, size_t n, const char *fmt, va_list ap) {
         }
       }
     } else {
-      // 普通字符处理
       if (n > 0 && pos < (int)(n - 1)) {
         out[pos] = *p;
         pos++;
       }
       total++;
     }
-    p++;  // 处理完当前字符或格式符后，继续前进
+    p++;  
   }
-  // 写入终止的空字符，注意只有当 n > 0 时才需要写入
   if (n > 0) {
     out[pos] = '\0';
   }
@@ -182,9 +176,8 @@ int snprintf(char *out, size_t n, const char *fmt, ...) {
   return ret;
 }
 
-// helper function
 static void int_to_str(int value, char *buf) {
-  char temp[32]; // 暂存反转前的数字字符
+  char temp[32]; 
   int pos = 0;
   bool neg = false;
 
@@ -193,23 +186,19 @@ static void int_to_str(int value, char *buf) {
     value = -value;
   }
 
-  // 特殊情况：value 为 0
   if (value == 0) {
     temp[pos++] = '0';
   } else {
-    // 将数字逆序存放到 temp 中
     while (value > 0) {
       temp[pos++] = (char)('0' + (value % 10));
       value /= 10;
     }
   }
 
-  // 如果是负数，记得加上 '-'
   if (neg) {
     temp[pos++] = '-';
   }
 
-  // 将 temp 中的字符逆序复制到 buf 中
   int i = 0;
   while (pos > 0) {
     buf[i++] = temp[--pos];

@@ -2,8 +2,6 @@
 #include <nemu.h>
 #include <stdio.h>
 
-#define SYNC_ADDR (VGACTL_ADDR + 4)
-
 void __am_gpu_init() {
   uint32_t vga_ctl = inl(VGACTL_ADDR);
   int w = (vga_ctl >> 16) & 0xFFFF; 

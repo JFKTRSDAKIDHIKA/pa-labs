@@ -8,7 +8,7 @@ static unsigned long int next = 1;
 
 extern Area heap;
 
-static uintptr_t cur_addr ALIGN(4) = 0;
+static uintptr_t cur_addr ALIGN(4);
 
 int rand(void) {
   // RAND_MAX assumed to be 32767
@@ -37,11 +37,10 @@ int atoi(const char* nptr) {
 void *malloc(size_t size) {
   if (size == 0) return NULL;
 
-  if (cur_addr == 0) {
-    cur_addr = (uintptr_t)heap.start;
-  }
+  if (cur_addr == 0) cur_addr = (uintptr_t)heap.start;
 
-  size = (size + 7) & ~7;
+  // align size to 4 bytes to ensure proper alignment for int/pointer accesses
+  size = (size + 3) & ~3;
 
   if (cur_addr + size > (uintptr_t)heap.end) {
     return NULL;

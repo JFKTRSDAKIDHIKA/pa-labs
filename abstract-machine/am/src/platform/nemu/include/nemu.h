@@ -30,6 +30,7 @@
 #define KBD_ADDR        (DEVICE_BASE + 0x0000060)
 #define RTC_ADDR        (DEVICE_BASE + 0x0000048)
 #define VGACTL_ADDR     (DEVICE_BASE + 0x0000100)
+#define SYNC_ADDR       (VGACTL_ADDR + 4)
 #define AUDIO_ADDR      (DEVICE_BASE + 0x0000200)
 #define DISK_ADDR       (DEVICE_BASE + 0x0000300)
 #define FB_ADDR         (MMIO_BASE   + 0x1000000)

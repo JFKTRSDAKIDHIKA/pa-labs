@@ -60,7 +60,7 @@ __am_asm_trap:
   mv a0, sp
   call __am_irq_handle
 
-  # 切换到新上下文
+  # switch to new context
   mv sp, a0
 
   LOAD t0, OFFSET_CAUSE(sp)
