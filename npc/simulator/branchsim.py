@@ -52,6 +52,40 @@ class StaticPredictor:
             'jump': self.jump_correct / self.jump_predictions if self.jump_predictions > 0 else 0
         }
 
+@dataclass
+class BranchEntry:
+    state: int = 0  # Default: Strongly Not Taken
+
+class TwoBitPredictor(StaticPredictor):
+    def __init__(self):
+        super().__init__()
+        self.branch_table = {}  # PC -> BranchEntry mapping
+        self.last_pc = 0
+        
+    def predict(self, pc: int, inst_type: str) -> bool:
+        self.last_pc = pc  # Store PC for update
+        if inst_type == 'branch':
+            if pc not in self.branch_table:
+                self.branch_table[pc] = BranchEntry()
+            entry = self.branch_table[pc]
+            self.last_prediction = entry.state >= 2  # Taken if state is 2 or 3
+            return self.last_prediction
+        else:  # jump
+            self.last_prediction = True  # Always predict jumps as taken
+            return True
+            
+    def update(self, inst_type: str, actual_taken: bool):
+        super().update(inst_type, actual_taken)
+        
+        if inst_type == 'branch':
+            entry = self.branch_table[self.last_pc]
+            if actual_taken:
+                # Increment state if branch was taken (max 3)
+                entry.state = min(3, entry.state + 1)
+            else:
+                # Decrement state if branch was not taken (min 0)
+                entry.state = max(0, entry.state - 1)
+
 def check_cache_valid(trace_file: str) -> bool:
     """Check if cache exists and is valid"""
     if not os.path.exists(CACHE_DIR):
@@ -154,12 +188,12 @@ def load_cached_instructions() -> Iterator[ControlFlowInfo]:
             for inst in pickle.load(f):
                 yield inst
 
-def evaluate_predictor(trace_file: str) -> Tuple[dict, float, int]:
+def evaluate_predictor(trace_file: str, predictor_class=StaticPredictor) -> Tuple[dict, float, int]:
     """Evaluate predictor using cached data"""
     if not check_cache_valid(trace_file):
         create_cache(trace_file)
     
-    predictor = StaticPredictor()
+    predictor = predictor_class()
     total_instructions = 0
     
     print("Evaluating predictor...")
@@ -181,10 +215,22 @@ def main():
     trace_file = "/root/ysyx-workbench/am-kernels/benchmarks/microbench/build/nemu-log.txt"
     
     try:
-        accuracies, avg_cycles, total_instructions = evaluate_predictor(trace_file)
+        # Test static predictor
+        print("\nEvaluating Static Predictor (Always Not Taken)")
+        accuracies, avg_cycles, total_instructions = evaluate_predictor(trace_file, StaticPredictor)
         
         print(f"\nProcessed {total_instructions:,} instructions")
-        print("\nStatic Predictor (Always Not Taken)")
+        print(f"Overall prediction accuracy: {accuracies['overall']:.2%}")
+        print(f"Branch prediction accuracy: {accuracies['branch']:.2%}")
+        print(f"Jump prediction accuracy: {accuracies['jump']:.2%}")
+        print(f"Average cycles per instruction: {avg_cycles:.2f}")
+        print(f"Performance impact: {(avg_cycles-1):.2f} additional cycles per instruction")
+
+        # Test 2-bit predictor
+        print("\nEvaluating 2-Bit Predictor")
+        accuracies, avg_cycles, total_instructions = evaluate_predictor(trace_file, TwoBitPredictor)
+        
+        print(f"\nProcessed {total_instructions:,} instructions")
         print(f"Overall prediction accuracy: {accuracies['overall']:.2%}")
         print(f"Branch prediction accuracy: {accuracies['branch']:.2%}")
         print(f"Jump prediction accuracy: {accuracies['jump']:.2%}")
