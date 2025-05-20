@@ -58,15 +58,11 @@ module gpio_top_apb(
       led_reg <= 16'h0;
       seg_reg <= 32'h0;
     end else if (apb_write) begin
-      if (addr_led && in_pstrb[1:0] != 2'b00) begin
-        if (in_pstrb[0]) led_reg[7:0] <= in_pwdata[7:0];
-        if (in_pstrb[1]) led_reg[15:8] <= in_pwdata[15:8];
+      if (addr_led) begin
+        led_reg <= in_pwdata;
       end
       if (addr_seg) begin
-        if (in_pstrb[0]) seg_reg[7:0] <= in_pwdata[7:0];
-        if (in_pstrb[1]) seg_reg[15:8] <= in_pwdata[15:8];
-        if (in_pstrb[2]) seg_reg[23:16] <= in_pwdata[23:16];
-        if (in_pstrb[3]) seg_reg[31:24] <= in_pwdata[31:24];
+        seg_reg <= in_pwdata;
       end
     end
   end
@@ -74,13 +70,38 @@ module gpio_top_apb(
   assign gpio_out = led_reg;
   assign switch_reg = gpio_in;
   
-  assign gpio_seg_0 = {4'b0, seg_reg[3:0]};
-  assign gpio_seg_1 = {4'b0, seg_reg[7:4]};
-  assign gpio_seg_2 = {4'b0, seg_reg[11:8]};
-  assign gpio_seg_3 = {4'b0, seg_reg[15:12]};
-  assign gpio_seg_4 = {4'b0, seg_reg[19:16]};
-  assign gpio_seg_5 = {4'b0, seg_reg[23:20]};
-  assign gpio_seg_6 = {4'b0, seg_reg[27:24]};
-  assign gpio_seg_7 = {4'b0, seg_reg[31:28]};
+  function [7:0] decode_7seg;
+    input [3:0] digit;
+    begin
+      case (digit)
+        4'h0: decode_7seg = 8'b11111100; // 0
+        4'h1: decode_7seg = 8'b01100000; // 1
+        4'h2: decode_7seg = 8'b11011010; // 2
+        4'h3: decode_7seg = 8'b11110010; // 3
+        4'h4: decode_7seg = 8'b01100110; // 4
+        4'h5: decode_7seg = 8'b10110110; // 5
+        4'h6: decode_7seg = 8'b10111110; // 6
+        4'h7: decode_7seg = 8'b11100000; // 7
+        4'h8: decode_7seg = 8'b01111111; // 8
+        4'h9: decode_7seg = 8'b11110110; // 9
+        4'ha: decode_7seg = 8'b01110111; // A
+        4'hb: decode_7seg = 8'b01111100; // b
+        4'hc: decode_7seg = 8'b00111001; // C
+        4'hd: decode_7seg = 8'b01011110; // d
+        4'he: decode_7seg = 8'b01111001; // E
+        4'hf: decode_7seg = 8'b01110001; // F
+        default: decode_7seg = 8'b11111111; // 默认全灭
+      endcase
+    end
+  endfunction
+  
+  assign gpio_seg_0 = ~decode_7seg(seg_reg[3:0]);
+  assign gpio_seg_1 = ~decode_7seg(seg_reg[7:4]);
+  assign gpio_seg_2 = ~decode_7seg(seg_reg[11:8]);
+  assign gpio_seg_3 = ~decode_7seg(seg_reg[15:12]);
+  assign gpio_seg_4 = ~decode_7seg(seg_reg[19:16]);
+  assign gpio_seg_5 = ~decode_7seg(seg_reg[23:20]);
+  assign gpio_seg_6 = ~decode_7seg(seg_reg[27:24]);
+  assign gpio_seg_7 = ~decode_7seg(seg_reg[31:28]);
 
 endmodule

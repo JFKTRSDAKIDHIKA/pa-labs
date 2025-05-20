@@ -25,6 +25,6 @@ image: image-dep
 	@$(OBJCOPY) -S --remove-section=.bss,contents -O binary $(IMAGE).elf $(IMAGE).bin
 
 run: insert-arg
-	$(MAKE) -C $(NPC_HOME) IMG=$(IMAGE).bin sim
+	$(MAKE) -C $(NPC_HOME) IMG=$(IMAGE).bin nvboard
 
 .PHONY: insert-arg

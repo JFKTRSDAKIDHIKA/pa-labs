@@ -96,7 +96,8 @@ sim: $(EXEC)
 # NVBoard target
 nvboard: $(EXEC)
 	@echo "Running NVBoard simulation..."
-	$(EXEC)
+	@mkdir -p sim_output
+	$(EXEC) $(IMG) $(STEP_MODE)
 
 # Clean generated files
 clean:

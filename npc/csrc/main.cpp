@@ -22,6 +22,7 @@
 #include <readline/history.h>
 #include <filesystem>  
 #include <fstream>
+#include <nvboard.h>
 
 // Define macros
 #define NEED_CHECK(top) ((top->io_wbu_state_debug == 2) && (top->io_wbu_reg_inst_debug != 0x4033) && (top->io_wbu_reg_pc_debug != 0x0))
@@ -40,6 +41,7 @@ static int MAX_COMMIT_LOGS = 10;
 void print_perf_report(double seconds, double cycles_per_second);
 void print_config();
 void finalize_and_log(const std::string& commit_log_path = "./sim_output/commit_log.txt");
+void nvboard_bind_all_pins(VysyxSoCFull* top);
 
 #ifdef TRACE
 InstructionTrace itrace;
@@ -237,6 +239,7 @@ void tick(void) {
 
     top->clock = 1;
     top->eval();
+    nvboard_update();
     Verilated::timeInc(1);
 }
 
@@ -401,6 +404,9 @@ int sdb_mainloop() {
 int main(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
     top = new VysyxSoCFull;
+
+    nvboard_bind_all_pins(top);
+    nvboard_init();
 
     std::string dirname = "sim_output";
     std::filesystem::create_directory(dirname); 
